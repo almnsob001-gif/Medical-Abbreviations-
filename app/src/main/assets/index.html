@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Medical Abbreviations</title>
+    <style>
+        :root { --bg: #f4f6f8; --primary: #00796b; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif; }
+        body { background-color: var(--bg); color: #333; padding-bottom: 20px; }
+        header { background-color: var(--primary); color: white; padding: 20px; text-align: center; position: sticky; top: 0; z-index: 10; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        h1 { font-size: 1.4rem; margin-bottom: 5px; }
+        .stats { font-size: 0.85rem; opacity: 0.9; }
+        .search-container { padding: 15px; background-color: var(--primary); position: sticky; top: 75px; z-index: 9; }
+        input[type="text"] { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.2); outline: none; }
+        .results { padding: 15px; }
+        .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 12px; display: flex; box-shadow: 0 2px 8px rgba(0,0,0,0.06); animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .color-bar { width: 6px; border-radius: 3px; margin-right: 14px; flex-shrink: 0; }
+        .header-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; }
+        .abbr { font-size: 1.25rem; font-weight: bold; }
+        .category { font-size: 0.75rem; color: #777; background: #f0f0f0; padding: 2px 8px; border-radius: 12px; }
+        .full-name { font-size: 0.95rem; color: #444; line-height: 1.3; }
+        .empty { text-align: center; color: #888; margin-top: 50px; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Medical Abbreviations</h1>
+        <div class="stats" id="stats">Loading...</div>
+    </header>
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Enter abbreviation (e.g., HTN, MI)" autocomplete="off">
+    </div>
+    <div class="results" id="resultsContainer"><div class="empty">Type an abbreviation to search...</div></div>
+
+    <script>
+        // البيانات المدمجة (يمكنك استبدال هذا الجزء ببياناتك الكاملة من الملف القديم)
+        const data = [
+            {"abbr": "HTN", "full_name": "Hypertension", "category": "Cardiology"},
+            {"abbr": "MI", "full_name": "Myocardial Infarction", "category": "Cardiology"},
+            {"abbr": "CHF", "full_name": "Congestive Heart Failure", "category": "Cardiology"},
+            {"abbr": "CAD", "full_name": "Coronary Artery Disease", "category": "Cardiology"},
+            {"abbr": "AF", "full_name": "Atrial Fibrillation", "category": "Cardiology"},
+            {"abbr": "COPD", "full_name": "Chronic Obstructive Pulmonary Disease", "category": "Pulmonology"},
+            {"abbr": "SOB", "full_name": "Shortness of Breath", "category": "Pulmonology"},
+            {"abbr": "PE", "full_name": "Pulmonary Embolism", "category": "Pulmonology"},
+            {"abbr": "CVA", "full_name": "Cerebrovascular Accident", "category": "Neurology"},
+            {"abbr": "TIA", "full_name": "Transient Ischemic Attack", "category": "Neurology"},
+            {"abbr": "MS", "full_name": "Multiple Sclerosis", "category": "Neurology"},
+            {"abbr": "DM", "full_name": "Diabetes Mellitus", "category": "Endocrinology"},
+            {"abbr": "DKA", "full_name": "Diabetic Ketoacidosis", "category": "Endocrinology"},
+            {"abbr": "TSH", "full_name": "Thyroid-Stimulating Hormone", "category": "Labs"},
+            {"abbr": "CKD", "full_name": "Chronic Kidney Disease", "category": "Nephrology"},
+            {"abbr": "AKI", "full_name": "Acute Kidney Injury", "category": "Nephrology"},
+            {"abbr": "UTI", "full_name": "Urinary Tract Infection", "category": "Urology"},
+            {"abbr": "BPH", "full_name": "Benign Prostatic Hyperplasia", "category": "Urology"},
+            {"abbr": "CBC", "full_name": "Complete Blood Count", "category": "Labs"},
+            {"abbr": "Hb", "full_name": "Hemoglobin", "category": "Labs"},
+            {"abbr": "WBC", "full_name": "White Blood Cell", "category": "Labs"},
+            {"abbr": "HIV", "full_name": "Human Immunodeficiency Virus", "category": "Infectious Disease"},
+            {"abbr": "TB", "full_name": "Tuberculosis", "category": "Infectious Disease"},
+            {"abbr": "COVID-19", "full_name": "Coronavirus Disease 2019", "category": "Infectious Disease"},
+            {"abbr": "GERD", "full_name": "Gastroesophageal Reflux Disease", "category": "Gastroenterology"},
+            {"abbr": "IBS", "full_name": "Irritable Bowel Syndrome", "category": "Gastroenterology"},
+            {"abbr": "IBD", "full_name": "Inflammatory Bowel Disease", "category": "Gastroenterology"},
+            {"abbr": "RA", "full_name": "Rheumatoid Arthritis", "category": "Rheumatology"},
+            {"abbr": "SLE", "full_name": "Systemic Lupus Erythematosus", "category": "Rheumatology"},
+            {"abbr": "OA", "full_name": "Osteoarthritis", "category": "Orthopedics"},
+            {"abbr": "Fx", "full_name": "Fracture", "category": "Orthopedics"},
+            {"abbr": "ACL", "full_name": "Anterior Cruciate Ligament", "category": "Orthopedics"},
+            {"abbr": "GCS", "full_name": "Glasgow Coma Scale", "category": "Emergency"},
+            {"abbr": "CPR", "full_name": "Cardiopulmonary Resuscitation", "category": "Emergency"},
+            {"abbr": "ACLS", "full_name": "Advanced Cardiac Life Support", "category": "Emergency"},
+            {"abbr": "PO", "full_name": "By Mouth", "category": "Route"},
+            {"abbr": "IV", "full_name": "Intravenous", "category": "Route"},
+            {"abbr": "IM", "full_name": "Intramuscular", "category": "Route"},
+            {"abbr": "BID", "full_name": "Twice a Day", "category": "Frequency"},
+            {"abbr": "TID", "full_name": "Three Times a Day", "category": "Frequency"},
+            {"abbr": "QID", "full_name": "Four Times a Day", "category": "Frequency"},
+            {"abbr": "PRN", "full_name": "As Needed", "category": "Frequency"},
+            {"abbr": "NPO", "full_name": "Nothing by Mouth", "category": "Orders"},
+            {"abbr": "CT", "full_name": "Computed Tomography", "category": "Imaging"},
+            {"abbr": "MRI", "full_name": "Magnetic Resonance Imaging", "category": "Imaging"},
+            {"abbr": "US", "full_name": "Ultrasound", "category": "Imaging"},
+            {"abbr": "ICU", "full_name": "Intensive Care Unit", "category": "Critical Care"},
+            {"abbr": "ER", "full_name": "Emergency Room", "category": "Emergency"},
+            {"abbr": "OR", "full_name": "Operating Room", "category": "Surgery"},
+            {"abbr": "MDD", "full_name": "Major Depressive Disorder", "category": "Psychiatry"},
+            {"abbr": "PTSD", "full_name": "Post-Traumatic Stress Disorder", "category": "Psychiatry"},
+            {"abbr": "OCD", "full_name": "Obsessive-Compulsive Disorder", "category": "Psychiatry"}
+        ];
+
+        const colors = {"Cardiology":"#e53935","Pulmonology":"#1e88e5","Neurology":"#8e24aa","Endocrinology":"#fb8c00","Gastroenterology":"#43a047","Nephrology":"#00acc1","Urology":"#00897b","Hematology":"#d32f2f","Infectious Disease":"#ab47bc","Rheumatology":"#f57c00","Dermatology":"#ec407a","Ophthalmology":"#3949ab","ENT":"#5c6bc0","Obstetrics":"#f06292","Gynecology":"#d81b60","Pediatrics":"#00bfa5","Psychiatry":"#7e57c2","Orthopedics":"#757575","Emergency":"#d84315","Critical Care":"#e64a19","Surgery":"#546e7a","Labs":"#0097a7","Imaging":"#607d8b","Documentation":"#546e7a","Pharmacology":"#9c27b0","Route":"#689f38","Frequency":"#827717","Orders":"#795548","Ventilation":"#1976d2","Vascular":"#c62828","Anatomy":"#6d4c41"};
+        
+        const resultsContainer = document.getElementById('resultsContainer');
+        const searchInput = document.getElementById('searchInput');
+        const stats = document.getElementById('stats');
+        const categories = new Set(data.map(d => d.category).filter(Boolean));
+        
+        stats.textContent = data.length + " abbreviations · " + categories.size + " specialties";
+
+        function renderCards(items) {
+            resultsContainer.innerHTML = '';
+            if (items.length === 0) {
+                resultsContainer.innerHTML = '<div class="empty">No results found.</div>';
+                return;
+            }
+            items.forEach(item => {
+                const color = colors[item.category] || "#9e9e9e";
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="color-bar" style="background-color: ${color}"></div>
+                    <div style="flex:1;">
+                        <div class="header-row">
+                            <span class="abbr" style="color: ${color}">${item.abbr}</span>
+                            <span class="category">${item.category}</span>
+                        </div>
+                        <div class="full-name">${item.full_name}</div>
+                    </div>
+                `;
+                resultsContainer.appendChild(card);
+            });
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim().toUpperCase();
+            if (!query) {
+                resultsContainer.innerHTML = '<div class="empty">Type an abbreviation to search...</div>';
+                return;
+            }
+            const results = data.filter(item => item.abbr.toUpperCase().includes(query));
+            results.sort((a, b) => (b.abbr.toUpperCase() === query ? 1 : 0) - (a.abbr.toUpperCase() === query ? 1 : 0));
+            renderCards(results.slice(0, 100));
+        });
+    </script>
+</body>
+</html>
